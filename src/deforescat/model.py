@@ -1,33 +1,39 @@
-"""Baseline LightGBM con validación temporal y comparación con persistencia."""
+"""Modelos LightGBM, variantes de variables y métricas."""
 from __future__ import annotations
 
 import lightgbm as lgb
+import numpy as np
 import pandas as pd
 from sklearn.metrics import average_precision_score, roc_auc_score
 
-NON_FEATURES = {"date", "y", "n_fires"}
+FIRE = ["fires_1d", "fires_3d", "fires_7d", "doy"]
+WX = ["T2M_MAX", "PRECTOTCORR", "WS10M_MAX", "RH2M", "rain_7d", "rain_30d"]
+# lag = días de retraso del clima. POWER tenía ~7 días de latencia al medirlo (2026-10-28),
+# por eso el modelo "operacional" solo usa clima de t-7 y focos de ventanas <=7 días
+# (el archivo NRT de FIRMS solo cubre 7 días).
+VARIANTS = {
+    "operacional": {"lag": 7, "feats": FIRE + WX},
+    "investigacion": {"lag": 0, "feats": FIRE + ["fires_14d"] + WX},
+    "solo_focos": {"lag": 0, "feats": FIRE + ["fires_14d"]},
+}
 
 
-def temporal_split(df: pd.DataFrame, test_frac: float = 0.25):
-    cut = df["date"].sort_values().iloc[int(len(df) * (1 - test_frac))]
-    return df[df["date"] < cut], df[df["date"] >= cut]
-
-
-def evaluate(df: pd.DataFrame, seed: int = 0, test_start: str | None = None) -> dict:
-    if test_start:
-        cut = pd.Timestamp(test_start)
-        train, test = df[df["date"] < cut], df[df["date"] >= cut]
-    else:
-        train, test = temporal_split(df)
-    feats = [c for c in df.columns if c not in NON_FEATURES]
+def fit(train: pd.DataFrame, feats: list[str], seed: int = 0) -> lgb.LGBMClassifier:
     clf = lgb.LGBMClassifier(n_estimators=300, learning_rate=0.05, random_state=seed, verbose=-1)
-    clf.fit(train[feats], train["y"])
-    p = clf.predict_proba(test[feats])[:, 1]
-    persist = (test["fires_1d"] > 0).astype(float)
+    return clf.fit(train[feats], train["y"])
+
+
+def top_frac_precision(y: np.ndarray, p: np.ndarray, frac: float = 0.1) -> float:
+    """Precisión entre el `frac` de casos con mayor riesgo predicho."""
+    k = max(1, int(len(y) * frac))
+    return float(np.asarray(y)[np.argsort(-p)[:k]].mean())
+
+
+def score(y, p, persistence) -> dict:
     return {
-        "prevalence_test": float(test["y"].mean()),
-        "ap_model": float(average_precision_score(test["y"], p)),
-        "auc_model": float(roc_auc_score(test["y"], p)),
-        "ap_persistence": float(average_precision_score(test["y"], persist)),
-        "n_train": len(train), "n_test": len(test),
+        "prevalencia": float(np.mean(y)),
+        "ap": float(average_precision_score(y, p)),
+        "auc": float(roc_auc_score(y, p)),
+        "precision_top10": top_frac_precision(y, p),
+        "ap_persistencia": float(average_precision_score(y, persistence)),
     }
