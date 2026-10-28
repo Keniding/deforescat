@@ -1,0 +1,20 @@
+[
+  {
+    "prevalence_test": 0.33484931506849314,
+    "ap_model": 0.8450319010140669,
+    "auc_model": 0.9062537943290363,
+    "ap_persistence": 0.6388001941248362,
+    "n_train": 109500,
+    "n_test": 36500,
+    "horizon_days": 1
+  },
+  {
+    "prevalence_test": 0.33484931506849314,
+    "ap_model": 0.7777730368160245,
+    "auc_model": 0.8730489001499283,
+    "ap_persistence": 0.5678124190242285,
+    "n_train": 109400,
+    "n_test": 36500,
+    "horizon_days": 2
+  }
+]
