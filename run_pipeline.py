@@ -1,6 +1,5 @@
 """Pipeline: focos reales FIRMS Bolivia 2021-2024 + clima NASA POWER -> LightGBM."""
 import json
-import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
