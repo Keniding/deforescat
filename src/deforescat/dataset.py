@@ -4,11 +4,12 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-CELL = 0.25  # grados
+CELL = 0.5  # grados
 
 
 def to_cells(fires: pd.DataFrame) -> pd.DataFrame:
     """Cuenta de focos por celda y día (usa columnas FIRMS latitude, longitude, acq_date)."""
+    fires = fires[(fires["type"] == 0) & (fires["confidence"] != "l")]  # vegetación, sin baja confianza
     df = pd.DataFrame({
         "date": pd.to_datetime(fires["acq_date"]),
         "lat": np.floor(fires["latitude"] / CELL) * CELL,

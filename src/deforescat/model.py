@@ -13,8 +13,12 @@ def temporal_split(df: pd.DataFrame, test_frac: float = 0.25):
     return df[df["date"] < cut], df[df["date"] >= cut]
 
 
-def evaluate(df: pd.DataFrame, seed: int = 0) -> dict:
-    train, test = temporal_split(df)
+def evaluate(df: pd.DataFrame, seed: int = 0, test_start: str | None = None) -> dict:
+    if test_start:
+        cut = pd.Timestamp(test_start)
+        train, test = df[df["date"] < cut], df[df["date"] >= cut]
+    else:
+        train, test = temporal_split(df)
     feats = [c for c in df.columns if c not in NON_FEATURES]
     clf = lgb.LGBMClassifier(n_estimators=300, learning_rate=0.05, random_state=seed, verbose=-1)
     clf.fit(train[feats], train["y"])
