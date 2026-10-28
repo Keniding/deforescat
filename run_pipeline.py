@@ -1,4 +1,4 @@
-"""Pipeline: focos reales FIRMS Bolivia 2021-2024 + clima NASA POWER -> LightGBM."""
+"""Pipeline: focos reales FIRMS Peru 2021-2024 + clima NASA POWER -> LightGBM."""
 import json
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -10,11 +10,12 @@ from deforescat import dataset, model, weather
 RAW, OUT = Path("data/raw"), Path("data")
 TOP_CELLS = 100
 START, END = "2021-01-01", "2024-12-31"
+TEST_START = "2024-01-01"
 
 
 def load_cells():
     f = pd.concat(pd.read_csv(p, usecols=["latitude", "longitude", "acq_date", "type", "confidence"])
-                  for p in sorted(RAW.glob("viirs_bolivia_*.csv")))
+                  for p in sorted(RAW.glob("viirs_peru_*.csv")))
     return dataset.to_cells(f)
 
 
@@ -34,7 +35,9 @@ def load_weather(keys):
 
 def main(horizon):
     cells = load_cells()
-    top = cells.groupby(["lat", "lon"])["n_fires"].sum().nlargest(TOP_CELLS).reset_index()
+    # Celdas elegidas SOLO con años de entrenamiento (sin fuga hacia 2024)
+    train_years = cells[cells["date"] < TEST_START]
+    top = train_years.groupby(["lat", "lon"])["n_fires"].sum().nlargest(TOP_CELLS).reset_index()
     cells = cells.merge(top[["lat", "lon"]])
     panel = dataset.build(cells, horizon, START, END)
     w = load_weather(top[["lat", "lon"]])
@@ -43,7 +46,7 @@ def main(horizon):
     w["rain_7d"] = g["PRECTOTCORR"].transform(lambda s: s.rolling(7, min_periods=1).sum())
     w["rain_30d"] = g["PRECTOTCORR"].transform(lambda s: s.rolling(30, min_periods=1).sum())
     df = panel.merge(w, on=["lat", "lon", "date"], how="left")
-    res = model.evaluate(df)
+    res = model.evaluate(df, test_start=TEST_START)
     res["horizon_days"] = horizon
     print(json.dumps(res))
     return res

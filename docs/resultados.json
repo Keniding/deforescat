@@ -1,20 +1,20 @@
 [
   {
-    "prevalence_test": 0.33484931506849314,
-    "ap_model": 0.8450319010140669,
-    "auc_model": 0.9062537943290363,
-    "ap_persistence": 0.6388001941248362,
+    "prevalence_test": 0.25452054794520546,
+    "ap_model": 0.6836634543632364,
+    "auc_model": 0.8524864734637783,
+    "ap_persistence": 0.4613482298510537,
     "n_train": 109500,
     "n_test": 36500,
     "horizon_days": 1
   },
   {
-    "prevalence_test": 0.33484931506849314,
-    "ap_model": 0.7777730368160245,
-    "auc_model": 0.8730489001499283,
-    "ap_persistence": 0.5678124190242285,
-    "n_train": 109400,
-    "n_test": 36500,
+    "prevalence_test": 0.25497252747252747,
+    "ap_model": 0.6060573006181824,
+    "auc_model": 0.8222070159486036,
+    "ap_persistence": 0.39077972815483947,
+    "n_train": 109500,
+    "n_test": 36400,
     "horizon_days": 2
   }
 ]
